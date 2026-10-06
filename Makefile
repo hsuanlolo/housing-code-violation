@@ -1,0 +1,29 @@
+# Full pipeline. `make dev` is safe to re-run; `make test` only works after `make freeze`.
+PY ?= python3
+
+data:
+	$(PY) code/01_fetch_hpd.py
+	$(PY) code/02_order_categories.py
+
+panel:
+	$(PY) code/03_build_panel.py
+	$(PY) code/07_descriptives.py
+
+dev: panel
+	$(PY) code/04_models.py dev
+	$(PY) code/05_evaluate.py dev
+
+link:
+	$(PY) code/06_rentcast_link.py
+
+freeze:
+	$(PY) code/08_freeze.py
+
+test:
+	$(PY) code/04_models.py test
+	$(PY) code/05_evaluate.py test
+
+paper:
+	bash code/20_build_paper.sh
+
+.PHONY: data panel dev link freeze test paper

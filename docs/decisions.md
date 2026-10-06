@@ -1,0 +1,18 @@
+# Design decisions log
+
+Append-only. Every change to `code/common.py`, the feature sets or the evaluation must have an entry here, dated, **before** the test set is unsealed. After the freeze, entries may only add sensitivity analyses. They may not change the primary specification.
+
+| Date | Decision | Why | Changed results? |
+|---|---|---|---|
+| 2026-10-06 | Topic switched from "listing-filter counts" to forecasting recorded Class C violations | Counting how many options remain after filtering is a product feature, not a research contribution. A forward-looking warning with a validation standard tests whether a housing-information product adds anything a renter cannot get by looking up the record. | — |
+| 2026-10-06 | Outcome = any new Class C violation by *inspection date* within 6 months | Class C means "immediately hazardous". Inspection date is when the condition was observed. Approval date governs only when information becomes *known*. | — |
+| 2026-10-06 | Features use only records approved ≤ t − 30 days; complaint months must end ≤ t − 30 days | Publication-lag buffer. 0- and 60-day sensitivity planned. | — |
+| 2026-10-06 | `currentstatus` never used in the main analysis; dismissed violations kept | Status is today's value, so it leaks. Whether a violation would later be dismissed was unknown at t. | — |
+| 2026-10-06 | Register attributes (units, stories, program) excluded from features | They are current snapshots, not values as of t. | — |
+| 2026-10-06 | Complaints downloaded aggregated to building × month × category × type | 7M problem rows otherwise. Monthly resolution is coarser than daily, so complaint "90-day" windows are 3 calendar months. | — |
+| 2026-10-06 | Problem type from HMC order number via keyword rules (`02_order_categories.py`) | 126 order numbers. Avoids downloading the free text for 2M rows. The lookup table is reviewable by hand. Generic "nuisance" order 510 (~5%) stays in `other`. | — |
+| 2026-10-06 | Spatial hold-out = 20% of community districts (seed 20261006), withheld from all fitting | Separates spatial transfer from temporal drift at the same origin. | — |
+| 2026-10-06 | Top-8 complaint major categories picked on data before 2023-07 only | Avoids choosing features with test-period information. | — |
+| 2026-10-06 | Test origins sealed behind `docs/FROZEN_SPEC.json` | Pre-registration discipline. Dev results may be reported (e.g. in the AAG abstract); test results only after the freeze. | — |
+| 2026-10-06 | **Disclosure:** the first panel build printed outcome base rates for the test origins (0.225–0.231). No model was scored on test rows. The print is now suppressed for test origins. | Transparency about what was seen before the freeze. | No |
+| 2026-10-06 | **Definitional break, 2019.** Class C pest violations rose from ~0.7k/yr (2017–18) to 46.7k (2019), and doors/egress from 3.9k to 19.2k. This is consistent with a reclassification of these conditions as Class C (the legal source is still to be confirmed). All training origins (2020+) have outcome windows after the break, but 2-year lookbacks for the 2020 origins straddle it. Planned sensitivity: an outcome restricted to the categories that were stable across the break (heat/water, lead, structural, mold/leak, gas/electric, detectors). | The outcome definition must be stable across train and test. | Adds a sensitivity analysis |

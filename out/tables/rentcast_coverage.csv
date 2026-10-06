@@ -1,0 +1,7 @@
+borough,hpd_match_out_of_scope,in_scope,no_hpd_match,n
+Bronx,0.286,0.652,0.062,454
+Brooklyn,0.392,0.512,0.096,1399
+Manhattan,0.139,0.662,0.2,1448
+Queens,0.298,0.572,0.13,523
+Staten Island,0.393,0.131,0.475,61
+All,0.273,0.586,0.141,3885

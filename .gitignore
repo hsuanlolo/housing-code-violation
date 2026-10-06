@@ -1,0 +1,13 @@
+# Data are re-downloadable (01_fetch_hpd.py) or private (RentCast); never commit them.
+data/raw/*
+!data/raw/classC_ordernumbers.json
+data/final/
+*.parquet
+keys/
+out/*.log
+out/predictions_*.parquet
+paper/*.docx
+paper/*.pdf
+paper/manuscript.html
+__pycache__/
+.DS_Store
