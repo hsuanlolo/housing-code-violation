@@ -69,9 +69,29 @@ Done (6 Oct 2026, labelled post-freeze; paper §7.7):
 * **Anchoring** (added after that diagnostic): match each origin's mean prediction to the completed recent rate. Pooled O/E 0.99. With district offsets, M2d reaches mean district error 0.028 and 0 districts > 20% off.
 * **Sensitivity grid (8 variants):** H1/H2 hold everywhere; H3 small everywhere; H4b fails in-district everywhere. Calibration decay, the district gradient and the warning-rule trade-off all reproduce. The H1 gain halves when the outcome excludes the categories reclassified in 2019.
 
+* **Rank-normalized inputs:** slow the decay but don't stop it, and cost a little Brier. Rank-normalized district context (M2d_rk) calibrates districts well with no recent outcomes.
+
+## Pre-registered prospective test (registered 6 Oct 2026)
+
+[`docs/preregistration.md`](docs/preregistration.md) and `docs/prereg/PREREG_SPEC.json`. The product (M2d + last-window Platt + anchoring + district offsets) is tested against M2c + last-window Platt.
+
+| Origin | Tier | Predict | Commit hash by | Evaluate with data from |
+|---|---|---|---|---|
+| 2026-01 | B sealed backtest | now | before evaluating | now |
+| 2026-07 | B sealed backtest | now | before evaluating | ≥ 2027-03-02 |
+| **2027-01** | **A primary** | download 2026-12-02 … 12-31 | **2026-12-31** | ≥ 2027-08-30 |
+| 2027-07 | A replication | download June 2027 | 2027-06-30 | ≥ 2028-02-29 |
+
+```
+python code/15_prereg.py predict 2027-01-01     # after `make data` in December 2026
+git add docs/prereg/pred_2027-01-01.sha256 && git commit -m "Prereg predictions 2027-01"
+python code/15_prereg.py evaluate 2027-01-01    # after `make data` on/after 2027-08-30
+```
+
+**Author action:** deposit `docs/preregistration.md` and `PREREG_SPEC.json` on OSF or AsPredicted before scoring any registered origin, and record the link in `docs/prereg/public_deposit.md`.
+
 Next:
 1. **Confirm the 2019 Class C reclassification** source and cite it (it now matters: about half the H1 gain rides on those categories).
-2. **Fresh out-of-time test** of the best secondary configuration (M2e or M2d + anchoring + district offsets) on the 2026-01 origin once its window closes, pre-registered *before* scoring.
-3. **Input normalization as a model change:** express record counts relative to the citywide level at each origin (rank or ratio features) so inflation is handled inside the model rather than by anchoring.
-4. **RentCast:** hand-audit about 100 matches, then attach anchored scores and district-relative flags to listings.
-5. **Figure:** community-district choropleth of O/E and of recall under both rules.
+2. **Run the registered tests** on the schedule above.
+3. **RentCast:** hand-audit about 100 matches, then attach anchored scores and district-relative flags to listings.
+4. **Figure:** community-district choropleth of O/E and of recall under both rules.

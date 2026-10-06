@@ -30,6 +30,7 @@ secondary:
 	$(PY) code/12_partial_recal.py
 	$(PY) code/01_fetch_hpd.py violations_ab
 	$(PY) code/13_sensitivity.py
+	$(PY) code/14_rank_features.py
 
 paper:
 	bash code/20_build_paper.sh

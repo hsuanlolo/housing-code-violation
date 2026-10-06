@@ -1,0 +1,51 @@
+{
+  "ranked_inputs": [
+    "c365",
+    "c365_cat_detectors_guards",
+    "c365_cat_doors_egress",
+    "c365_cat_gas_electric",
+    "c365_cat_heat_water",
+    "c365_cat_lead_paint",
+    "c365_cat_mold_leak",
+    "c365_cat_other",
+    "c365_cat_pests",
+    "c365_cat_plumbing",
+    "c365_cat_sanitation",
+    "c365_cat_structural",
+    "c365_days",
+    "c365_months",
+    "c365_rentimp",
+    "c730",
+    "c90",
+    "cd_mean_comp365",
+    "cd_share_c365",
+    "cd_share_c90",
+    "comp365",
+    "comp365_cat_door_window",
+    "comp365_cat_electric",
+    "comp365_cat_general",
+    "comp365_cat_heat_hot_water",
+    "comp365_cat_other",
+    "comp365_cat_paint_plaster",
+    "comp365_cat_plumbing",
+    "comp365_cat_unsanitary_condition",
+    "comp365_cat_water_leak",
+    "comp365_emerg",
+    "comp365_months",
+    "comp730",
+    "comp90",
+    "comp_trend",
+    "days_since_c",
+    "trend"
+  ],
+  "params": {
+    "M2c_rk": 1.0,
+    "M2d_rk": 1.0,
+    "M2e_rk": 1.0,
+    "M3_rk": {
+      "learning_rate": 0.05,
+      "max_leaf_nodes": 31,
+      "min_samples_leaf": 200
+    }
+  }
+}
