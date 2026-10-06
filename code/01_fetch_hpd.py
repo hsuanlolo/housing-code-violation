@@ -109,6 +109,25 @@ def fetch_complaints():
     return len(df)
 
 
+def fetch_violations_ab():
+    """SECONDARY (post-freeze sensitivity): Class A/B counts by building x inspection month."""
+    months = pd.date_range(HISTORY_START, datetime.now(), freq="MS")
+
+    def one(m):
+        nxt = m + pd.offsets.MonthBegin(1)
+        return paged(DS_VIOLATIONS, {
+            "$select": "buildingid, date_trunc_ym(inspectiondate) AS month, class, count(*) AS n",
+            "$where": "class in ('A','B') AND inspectiondate >= '{:%Y-%m-%d}' AND inspectiondate < '{:%Y-%m-%d}'"
+                      .format(m, nxt),
+            "$group": "buildingid, month, class",
+            "$order": "buildingid, class",
+        })
+    with ThreadPoolExecutor(WORKERS) as ex:
+        df = pd.concat(list(ex.map(one, months)), ignore_index=True)
+    df.to_csv(RAW/"violations_ab_bym.csv", index=False)
+    return len(df)
+
+
 def fetch_buildings():
     df = paged(DS_BUILDINGS, {"$order": "buildingid"})
     df.to_csv(RAW/"buildings.csv", index=False)
@@ -117,9 +136,11 @@ def fetch_buildings():
 
 JOBS = {"violations": fetch_violations, "complaints": fetch_complaints,
         "buildings": fetch_buildings}
+OPTIONAL = {"violations_ab": fetch_violations_ab}   # run only when named
 
 if __name__ == "__main__":
     todo = sys.argv[1:] or list(JOBS)
+    JOBS.update(OPTIONAL)
     log_path = RAW/"fetch_log.json"
     log = json.loads(log_path.read_text()) if log_path.exists() else {}
     for name in todo:

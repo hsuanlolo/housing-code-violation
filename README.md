@@ -65,10 +65,13 @@ Done (6 Oct 2026, labelled post-freeze; paper §7.7):
 * **ACS tract context (M2e):** −0.9% Brier vs M2c (in- and out-of-district); districts > 20% miscalibrated fell from 20 to 9. Temporal drift unchanged.
 * **Rolling recalibration:** half-yearly refresh lifts end-of-test O/E from 0.87 to 0.92. Per-district offsets from recent outcomes cut district error by about a third. Best: M2e + rolling district offsets.
 
-Next, still labelled as sensitivity analyses:
-1. **Sensitivity grid:** stable-category outcome (2019 Class C break), information lag 0/60 days, dismissed violations excluded, Class A/B counts as features, 3- and 12-month horizons.
-2. **Shorter recalibration lag:** recalibrate on partial (e.g. 3-month) outcome windows to close the one-year lag.
-3. **Confirm the 2019 Class C reclassification** source and cite it.
-4. **RentCast:** hand-audit about 100 matches, then attach M2e + rolling-district-recalibrated scores and district-relative flags to listings.
+* **Partial-window recalibration:** completed rates are accurate, but calibration did not improve. Diagnostic: the drift is **input inflation** (event rate flat, mean prediction rising 0.240 → 0.272).
+* **Anchoring** (added after that diagnostic): match each origin's mean prediction to the completed recent rate. Pooled O/E 0.99. With district offsets, M2d reaches mean district error 0.028 and 0 districts > 20% off.
+* **Sensitivity grid (8 variants):** H1/H2 hold everywhere; H3 small everywhere; H4b fails in-district everywhere. Calibration decay, the district gradient and the warning-rule trade-off all reproduce. The H1 gain halves when the outcome excludes the categories reclassified in 2019.
+
+Next:
+1. **Confirm the 2019 Class C reclassification** source and cite it (it now matters: about half the H1 gain rides on those categories).
+2. **Fresh out-of-time test** of the best secondary configuration (M2e or M2d + anchoring + district offsets) on the 2026-01 origin once its window closes, pre-registered *before* scoring.
+3. **Input normalization as a model change:** express record counts relative to the citywide level at each origin (rank or ratio features) so inflation is handled inside the model rather than by anchoring.
+4. **RentCast:** hand-audit about 100 matches, then attach anchored scores and district-relative flags to listings.
 5. **Figure:** community-district choropleth of O/E and of recall under both rules.
-6. **Fresh out-of-time test** of M2e + rolling recalibration on 2026-01 when its window closes (after 2026-07 plus lag).

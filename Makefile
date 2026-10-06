@@ -27,6 +27,9 @@ secondary:
 	$(PY) code/09_fetch_acs.py
 	$(PY) code/10_acs_context.py
 	$(PY) code/11_recalibration.py
+	$(PY) code/12_partial_recal.py
+	$(PY) code/01_fetch_hpd.py violations_ab
+	$(PY) code/13_sensitivity.py
 
 paper:
 	bash code/20_build_paper.sh
