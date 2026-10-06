@@ -24,7 +24,7 @@ from sklearn.metrics import roc_auc_score
 
 from common import FIGURES, OUT, SEED, TABLES, TOP_K_SHARE
 
-PROB_MODELS = ["M1", "M2a", "M2b", "M2c", "M3"]
+PROB_MODELS = ["M1", "M2a", "M2b", "M2c", "M2d", "M3"]
 B = 500
 
 
@@ -104,21 +104,23 @@ def reliability_plot(df, cols, path, title):
     fig.tight_layout(); fig.savefig(path, dpi=200); plt.close(fig)
 
 
-def district_plot(by, model, path):
-    """Observed/expected by district against district event rate (H4)."""
-    fig, ax = plt.subplots(figsize=(5.5, 4))
-    for held, mk, lab in [(0, "o", "in-district"), (1, "^", "held-out district")]:
-        d = by[by["held_out"] == held]
-        ax.scatter(d["event_rate"], d["o_e_ratio"], s=d["n"] / 40, marker=mk,
-                   alpha=0.7, label=lab, edgecolor="white", linewidth=0.5)
-    ax.axhline(1, color="#999", lw=1, ls="--")
-    for _, r in by[(by["o_e_ratio"] < 0.6) | (by["o_e_ratio"] > 1.1)].iterrows():
-        ax.annotate(str(int(r["cd"])), (r["event_rate"], r["o_e_ratio"]), fontsize=7,
-                    xytext=(3, 3), textcoords="offset points", color="#444")
-    ax.set_xlabel("District event rate (share of scored buildings with a new Class C)")
-    ax.set_ylabel("Observed / expected ({})".format(model))
-    ax.spines[["top", "right"]].set_visible(False)
-    ax.legend(frameon=False, fontsize=8, loc="lower right")
+def district_plot(bys, path):
+    """Observed/expected by district against district event rate, one panel per model (H4)."""
+    fig, axes = plt.subplots(1, len(bys), figsize=(5 * len(bys), 4), sharey=True)
+    for ax, (model, by) in zip(np.atleast_1d(axes), bys.items()):
+        for held, mk, lab in [(0, "o", "in-district"), (1, "^", "held-out district")]:
+            d = by[by["held_out"] == held]
+            ax.scatter(d["event_rate"], d["o_e_ratio"], s=d["n"] / 40, marker=mk,
+                       alpha=0.7, label=lab, edgecolor="white", linewidth=0.5)
+        ax.axhline(1, color="#999", lw=1, ls="--")
+        for _, r in by[(by["o_e_ratio"] < 0.6) | (by["o_e_ratio"] > 1.1)].iterrows():
+            ax.annotate(str(int(r["cd"])), (r["event_rate"], r["o_e_ratio"]), fontsize=7,
+                        xytext=(3, 3), textcoords="offset points", color="#444")
+        ax.set_title(model, fontsize=10)
+        ax.set_xlabel("District event rate")
+        ax.spines[["top", "right"]].set_visible(False)
+    np.atleast_1d(axes)[0].set_ylabel("Observed / expected")
+    np.atleast_1d(axes)[0].legend(frameon=False, fontsize=8, loc="lower right")
     fig.tight_layout(); fig.savefig(path, dpi=200); plt.close(fig)
 
 
@@ -142,42 +144,56 @@ def main(stage):
                                                "auc", "o_e_ratio", "cal_slope"]]
     print(show.round(4).to_string(index=False))
 
-    # 2. Paired model contrasts on the in-district rows (RQ1-RQ3).
-    ind = df[df["spatial_holdout"] == 0]
-    pairs = [("M2b", "M2a", "H1: timing/type vs counts"),
-             ("M2a", "M1", "logistic counts vs binned baseline"),
-             ("M2c", "M2b", "H2: + complaints"),
-             ("M3", "M2c", "H3: boosting vs logistic")]
+    # 2. Paired model contrasts (RQ1-RQ4). H1-H3 on in-district rows; the
+    #    district-context contrast also on held-out districts, where it matters.
+    pairs = [("M2b", "M2a", "H1: timing/type vs counts", "in_district"),
+             ("M2a", "M1", "logistic counts vs binned baseline", "in_district"),
+             ("M2c", "M2b", "H2: + complaints", "in_district"),
+             ("M3", "M2c", "H3: boosting vs logistic", "in_district"),
+             ("M2d", "M2c", "H4b: + district context", "in_district"),
+             ("M2d", "M2c", "H4b: + district context", "held_out_district")]
     con = []
-    for a, b, lab in pairs:
-        est, lo, hi = paired_bootstrap(ind, a, b)
-        con.append(dict(contrast="{} - {}".format(a, b), hypothesis=lab,
+    for a, b, lab, split in pairs:
+        d = df[df["spatial_holdout"] == int(split == "held_out_district")]
+        est, lo, hi = paired_bootstrap(d, a, b)
+        con.append(dict(contrast="{} - {}".format(a, b), hypothesis=lab, split=split,
                         d_brier=est, ci_lo=lo, ci_hi=hi))
     con = pd.DataFrame(con)
     con.to_csv(TABLES/"{}_contrasts.csv".format(stage), index=False)
     print(con.to_string(index=False))
 
-    # 3. Community-district reliability (RQ4). Threshold for recall is the
-    #    citywide top-10% cut, as a product would apply it.
-    best = "M2c" if "M2c" in df else probs[0]
-    cut = np.sort(df[best].values)[::-1][max(1, int(len(df) * TOP_K_SHARE)) - 1]
-    d = df.dropna(subset=["cd"]).assign(flag=lambda x: x[best] >= cut)
+    # 3. Community-district reliability (RQ4), with and without district
+    #    context. Recall uses each model's citywide top-10% cut, as a product
+    #    would apply it.
+    bys = {}
+    for model in ("M2c", "M2d"):
+        by = by_district(df, model)
+        by.to_csv(TABLES/"{}_by_cd_{}.csv".format(stage, model), index=False)
+        print("O/E across districts ({}): median {:.2f}, IQR {:.2f}-{:.2f}, range {:.2f}-{:.2f}; "
+              "recall at citywide cut {:.2f}-{:.2f}; Spearman(O/E, event rate) {:.2f}".format(
+                  model, by["o_e_ratio"].median(), *by["o_e_ratio"].quantile([.25, .75]),
+                  by["o_e_ratio"].min(), by["o_e_ratio"].max(),
+                  by["recall_citywide_cut"].min(), by["recall_citywide_cut"].max(),
+                  by[["o_e_ratio", "event_rate"]].corr("spearman").iloc[0, 1]))
+        bys[model] = by
+    district_plot(bys, FIGURES/"{}_district_calibration.png".format(stage))
+    ind = df[df["spatial_holdout"] == 0]
+    reliability_plot(ind, ["M1", "M2b", "M2c", "M2d", "M3"], FIGURES/"{}_reliability.png".format(stage),
+                     "Reliability, {} origin(s), in-district".format(stage))
+
+
+def by_district(df, model):
+    cut = np.sort(df[model].values)[::-1][max(1, int(len(df) * TOP_K_SHARE)) - 1]
+    d = df.dropna(subset=["cd"]).assign(flag=lambda x: x[model] >= cut)
     by = d.groupby("cd").apply(lambda g: pd.Series({
         "n": len(g), "events": g["y"].sum(), "event_rate": g["y"].mean(),
-        "mean_pred": g[best].mean(), "o_e_ratio": g["y"].mean() / g[best].mean(),
-        "brier": np.mean((g[best] - g["y"]) ** 2),
+        "mean_pred": g[model].mean(), "o_e_ratio": g["y"].mean() / g[model].mean(),
+        "brier": np.mean((g[model] - g["y"]) ** 2),
         "recall_citywide_cut": g.loc[g["flag"], "y"].sum() / max(1, g["y"].sum()),
         "share_flagged": g["flag"].mean(),
         "c365_mean": g["c365"].mean(),
         "held_out": int(g["spatial_holdout"].iat[0])}))
-    by.reset_index().to_csv(TABLES/"{}_by_cd_{}.csv".format(stage, best), index=False)
-    print("\nO/E across districts ({}): median {:.2f}, IQR {:.2f}-{:.2f}, range {:.2f}-{:.2f}".format(
-        best, by["o_e_ratio"].median(), *by["o_e_ratio"].quantile([.25, .75]),
-        by["o_e_ratio"].min(), by["o_e_ratio"].max()))
-
-    district_plot(by.reset_index(), best, FIGURES/"{}_district_calibration.png".format(stage))
-    reliability_plot(ind, ["M1", "M2b", "M2c", "M3"], FIGURES/"{}_reliability.png".format(stage),
-                     "Reliability, {} origin(s), in-district".format(stage))
+    return by.reset_index()
 
 
 if __name__ == "__main__":

@@ -126,6 +126,31 @@ def build_origin(v, c, t, top_cats):
     return df.drop(columns=["last_c", "first_c", "first_comp"]).reset_index()
 
 
+CD_CONTEXT = ["cd_share_c365", "cd_share_c90", "cd_mean_comp365"]
+
+
+def add_district_context(panel):
+    """District-level context known at t (M2d): built from features, never outcomes.
+
+    For each community district x origin, over in-scope buildings:
+      cd_share_c365    share with any Class C in the past year
+      cd_share_c90     share with any Class C in the past 90 days
+      cd_mean_comp365  mean log(1 + complaints in the past year)
+    Buildings without a district get the citywide value at that origin.
+    Held-out districts get their own context: it uses only their records up to
+    t, never their outcomes and never anything learned in fitting.
+    """
+    x = panel.assign(_c365=(panel["c365"] > 0).astype(float),
+                     _c90=(panel["c90"] > 0).astype(float),
+                     _comp=np.log1p(panel["comp365"]))
+    agg = {"_c365": "cd_share_c365", "_c90": "cd_share_c90", "_comp": "cd_mean_comp365"}
+    for src, dst in agg.items():
+        by_cd = x.groupby(["origin", "cd"])[src].transform("mean")
+        city = x.groupby("origin")[src].transform("mean")
+        panel[dst] = by_cd.fillna(city)
+    return panel
+
+
 def building_geo(v):
     """Locate each building in a community district for spatial analysis.
 
@@ -180,6 +205,7 @@ if __name__ == "__main__":
     geo = building_geo(v)
     geo.to_csv(FINAL/"buildings_geo.csv", index=False)
     panel = panel.merge(geo[["buildingid", "cd"]], on="buildingid", how="left")
+    panel = add_district_context(panel)
     panel.to_parquet(FINAL/"panel.parquet", index=False)
     print("panel rows {:,}; buildings {:,}; missing CD {:.2%}".format(
         len(panel), panel["buildingid"].nunique(), panel["cd"].isna().mean()))

@@ -5,6 +5,7 @@
   M2a  logistic: counts + season
   M2b  logistic: + timing, repetition, problem type, history length
   M2c  logistic: + complaints
+  M2d  logistic: + district context known at t (added 2026-10-06, pre-freeze)
   M3   gradient boosting on the M2c inputs
 
 The layers are compared, not chained: no model consumes another's output.
@@ -37,6 +38,7 @@ KAPPA = 20  # M1 smoothing strength (pseudo-observations at the overall rate)
 COUNTS = ["c365", "c90"]
 TIMING = ["days_since_c", "never_c", "c730", "c365_days", "c365_months", "trend",
           "c365_rentimp", "history_months"]
+CD_CONTEXT = ["cd_share_c365", "cd_share_c90", "cd_mean_comp365"]  # see 03_build_panel.py
 COMPLAINTS_BASE = ["comp90", "comp365", "comp730", "comp365_emerg", "comp365_months",
                    "comp_trend"]
 
@@ -47,7 +49,8 @@ def feature_sets(cols):
     m2a = COUNTS + ["half_jul"]
     m2b = m2a + TIMING + cat
     m2c = m2b + COMPLAINTS_BASE + ccat
-    return {"M2a": m2a, "M2b": m2b, "M2c": m2c, "M3": m2c}
+    m2d = m2c + CD_CONTEXT
+    return {"M2a": m2a, "M2b": m2b, "M2c": m2c, "M2d": m2d, "M3": m2c}
 
 
 def spec_hash(fs):
@@ -85,7 +88,8 @@ def _log1p_nonneg(X):
 
 def make_lr(C, cols):
     tf = FunctionTransformer(lambda X: np.column_stack([
-        _log1p_nonneg(X[:, i]) if c not in ("trend", "comp_trend", "half_jul", "never_c")
+        _log1p_nonneg(X[:, i])
+        if c not in ("trend", "comp_trend", "half_jul", "never_c") and not c.startswith("cd_")
         else X[:, i] for i, c in enumerate(cols)]))
     return make_pipeline(tf, StandardScaler(),
                          LogisticRegression(C=C, max_iter=2000))

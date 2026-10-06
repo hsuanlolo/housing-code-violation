@@ -2,7 +2,7 @@
 
 **Author.** Hsuan Lo, DDes (Harvard University). Independent Researcher. Correspondence: hsuanlo@alumni.harvard.edu
 
-**Status.** Working paper v0.1, 6 October 2026. Sections 1–6 are complete drafts. Section 7 reports **development-stage** results only (prediction origin 1 January 2023), produced before the model specification was frozen. The 2024–2025 test origins are sealed in code and have not been scored. Every number marked ⟨dev⟩ will be superseded by test-set results. Placeholders read `[[TEST: …]]`.
+**Status.** Working paper v0.2, 6 October 2026 (v0.2 adds M2d, district context). Sections 1–6 are complete drafts. Section 7 reports **development-stage** results only (prediction origin 1 January 2023), produced before the model specification was frozen. The 2024–2025 test origins are sealed in code and have not been scored. Every number marked ⟨dev⟩ will be superseded by test-set results. Placeholders read `[[TEST: …]]`.
 
 ---
 
@@ -10,7 +10,7 @@
 
 *(Working-paper abstract. The 250-word AAG version is in `paper/abstract_aag2027.md`.)*
 
-A renter about to sign a lease in New York City can look up a building's housing-code record, but a list of past violations does not say whether hazards are likely to recur. We ask whether the timing, type and repetition of public maintenance records predict a new immediately hazardous (Class C) violation in the next six months better than a simple count does, and where in the city that predictive ability holds. Using every Class C violation and housing-maintenance complaint recorded by the Department of Housing Preservation and Development since 2017, we build a building-by-half-year panel and compare three layers of increasing complexity: a smoothed count baseline, nested logistic regressions that add event history and complaints, and gradient boosting. The design is built against leakage. Features use only records approved at least 30 days before each prediction date. Today's case status and building attributes are excluded. The model is frozen before it is scored on 2024–2025. A fifth of community districts is withheld from all fitting so that spatial transfer can be separated from temporal drift. We evaluate probabilities, not only rankings, with the Brier score, calibration and precision at a fixed 10% review budget. At the development origin, ⟨dev⟩ event history reduced the Brier score by 9.8% relative to a count-only logistic model, and complaints by a further 5.4%. Gradient boosting added nothing measurable over logistic regression. Among the top-scored 10% of buildings, 80% received a Class C violation within six months, against 71% when buildings were ranked by their violation count alone. Citywide calibration was good, but district-level observed-to-expected ratios ranged from 0.33 to 1.13 and tracked district event rates closely (Spearman ρ = 0.80). Under a citywide threshold, the share of eventual hazards flagged within a district ranged from 6% to 63%. Recorded Class C violations more than tripled between 2015 and 2024, so calibration under enforcement drift is a central result rather than a technicality. Finally, we link 3,885 active rental listings to the building register to measure how much of the market any record-based warning can cover. Where records are sparse, a low score is an absence of evidence, and the paper treats that absence as a geographic finding about whose housing problems become visible to the state.
+A renter about to sign a lease in New York City can look up a building's housing-code record, but a list of past violations does not say whether hazards are likely to recur. We ask whether the timing, type and repetition of public maintenance records predict a new immediately hazardous (Class C) violation in the next six months better than a simple count does, and where in the city that predictive ability holds. Using every Class C violation and housing-maintenance complaint recorded by the Department of Housing Preservation and Development since 2017, we build a building-by-half-year panel and compare three layers of increasing complexity: a smoothed count baseline, nested logistic regressions that add event history, complaints and finally district context, and gradient boosting. The design is built against leakage. Features use only records approved at least 30 days before each prediction date. Today's case status and building attributes are excluded. The model is frozen before it is scored on 2024–2025. A fifth of community districts is withheld from all fitting so that spatial transfer can be separated from temporal drift. We evaluate probabilities, not only rankings, with the Brier score, calibration and precision at a fixed 10% review budget. At the development origin, ⟨dev⟩ event history reduced the Brier score by 9.8% relative to a count-only logistic model, and complaints by a further 5.4%. Gradient boosting added nothing measurable over logistic regression. Among the top-scored 10% of buildings, 80% received a Class C violation within six months, against 71% when buildings were ranked by their violation count alone. Citywide calibration was good, but without place information district-level observed-to-expected ratios ranged from 0.33 to 1.13 and tracked district event rates closely (Spearman ρ = 0.80). Adding district context known at the prediction date removed most of that pattern (ρ = 0.10). It also reduced the number of districts miscalibrated by more than 20% from eight to two, at almost no cost in overall accuracy. Better calibration, however, sharpened a second inequality. Under a single citywide warning threshold, the number of districts in which fewer than one in ten eventual hazards is flagged rose from two to eight. A well-calibrated citywide score and an evenly informative warning are different goals. Recorded Class C violations more than tripled between 2015 and 2024, so calibration under enforcement drift is a central result rather than a technicality. Finally, we link 3,885 active rental listings to the building register to measure how much of the market any record-based warning can cover. Where records are sparse, a low score is an absence of evidence, and the paper treats that absence as a geographic finding about whose housing problems become visible to the state.
 
 **Keywords:** housing quality, code enforcement, administrative data, predictive modeling, calibration, spatial transferability, rental information, New York City
 
@@ -27,7 +27,7 @@ The question is easy to answer badly. Administrative housing records are generat
 We make three contributions.
 
 1. **Incremental predictive value.** We compare nested models on identical rows and test whether event history (recency, burstiness versus repetition, problem type) and complaint signals add information beyond the count a renter could compute by eye. Gradient boosting has to beat logistic regression on the same inputs, out of time and out of place, before its complexity is accepted.
-2. **Spatial reliability as an outcome.** We withhold a fifth of community districts from all model fitting. Comparing those districts with the rest at the same prediction date separates spatial transfer from temporal drift. We report calibration (whether a predicted 20% means 20%) by district, not only citywide discrimination.
+2. **Spatial reliability as an outcome.** We withhold a fifth of community districts from all model fitting. Comparing those districts with the rest at the same prediction date separates spatial transfer from temporal drift. We report calibration (whether a predicted 20% means 20%) by district, not only citywide discrimination. We then test how much of the district-level error is removed by giving the model place information known at the prediction date.
 3. **Coverage and abstention.** Linking 3,885 active rental listings to HPD buildings, we measure the share of the market for which a record-based warning can be offered at all. We argue that "no record" must be presented as missing evidence, not as safety.
 
 These contributions fit the 2027 AAG theme on geographic methods, tools and techniques for knowledge and justice. The geographic object is not a risk map. It is the uneven reliability of a public-data tool across the city it claims to describe.
@@ -105,7 +105,8 @@ A building is in scope at *t* if it had any Class C violation or HPD complaint i
 | Season | July-origin indicator | all |
 | Timing and repetition | days since last Class C; 2-year count; distinct inspection days and months in the last year; trend; history length | M2b+ |
 | Severity and type | rent-impairing count; counts by 11 problem types (last year) | M2b+ |
-| Complaints | complaints in 90/365/730 days; emergency problems; distinct complaint months; complaint trend; counts in 8 major categories | M2c, M3 |
+| Complaints | complaints in 90/365/730 days; emergency problems; distinct complaint months; complaint trend; counts in 8 major categories | M2c, M2d, M3 |
+| District context | share of the district's in-scope buildings with a Class C in the last 365 / 90 days; district mean log(1 + past-year complaints). All computed from features at *t*, never outcomes | M2d |
 
 Trend is a difference in daily event rates between the last 90 days and the preceding 275, $C^{90}/90 - (C^{365} - C^{90})/275$. With nine events in each period, the last 90 days run at about three times the earlier daily rate and trend ≈ +0.067 per day. A raw difference $C^{90} - C^{365}$ would read this building as flat or declining.
 
@@ -119,11 +120,13 @@ A bin with 100 observations and 20 events, with $\bar p$ = 10%, gives $(20+2)/12
 
 **M2, logistic regression.** Three nested specifications use the same estimator,
 $$\hat p^{(2)}_{it} = \sigma(\eta_{it}),\quad \eta_{it} = \alpha + \beta_1\log(1+C^{365}_{it}) + \beta_2\log(1+C^{90}_{it}) + \theta^\top Z_{it} + \gamma\,\text{Jul}_t,$$
-where $Z$ is empty in M2a, adds timing, repetition and type in M2b, and adds complaints in M2c. Counts enter as $\log(1+x)$ and all inputs are standardized. The L2 penalty is selected on the tuning origin. Coefficients are conditional associations, not effects.
+where $Z$ is empty in M2a, adds timing, repetition and type in M2b, adds complaints in M2c, and adds district context in M2d. Counts enter as $\log(1+x)$ and all inputs are standardized. The L2 penalty is selected on the tuning origin. Coefficients are conditional associations, not effects.
 
 **M3, gradient boosting.** A histogram gradient-boosted tree ensemble,
 $$F_M(X) = F_0 + \nu\sum_{m=1}^{M} f_m(X),\qquad \hat p^{(3)} = \sigma(F_M(X)),$$
 is fit on the M2c inputs, with early stopping and a small grid over learning rate and leaf count selected on the tuning origin. M3 can represent interactions such as "recent complaints matter only when the same problem recurs across months" without their being specified. If it does not beat M2c out of time and out of place, M2c is preferred.
+
+**M2d, district context (added before the freeze).** M2a–M2c and M3 contain no information about place. M2d adds three district-level features to M2c, each computed at *t* from the in-scope buildings of the building's community district: the share with any Class C in the past year, the share with any in the past 90 days, and the mean log past-year complaint count. These summarize the district's *recorded* hazard environment using only information available at *t*. Held-out districts receive their own context values, which depend only on their records up to *t*, never on their outcomes or on anything learned in fitting. M2d was added after the development results in Section 7.3 showed systematic district-level miscalibration, and before any test-origin scoring (`docs/decisions.md`). It is a fifth compared model, not a replacement for M2c. Comparing M2c with M2d asks how much of the spatial unreliability of a place-blind model is removed by telling it where it is.
 
 ## 6. Validation and evaluation
 
@@ -190,17 +193,19 @@ The panel has 832,020 building-origin rows covering 158,612 buildings. 0.05% of 
 | | M2a counts | 0.1288 | 0.242 | 0.719 | 0.332 | 0.768 | 1.07 | 1.00 |
 | | M2b + history and type | 0.1162 | 0.317 | 0.776 | 0.359 | 0.841 | 0.93 | 0.99 |
 | | M2c + complaints | **0.1099** | **0.354** | **0.799** | **0.369** | 0.860 | 0.96 | 0.99 |
+| | M2d + district context | **0.1098** | **0.354** | 0.797 | 0.368 | 0.861 | 0.97 | 0.99 |
 | | M3 boosting | **0.1098** | **0.354** | 0.798 | 0.369 | **0.864** | 0.95 | 1.02 |
 | Held-out districts | M1r | — | — | 0.662 | 0.338 | 0.790 | — | — |
 | | M1 | 0.1251 | 0.205 | 0.619 | 0.316 | 0.754 | 1.01 | 0.99 |
 | | M2a | 0.1220 | 0.225 | 0.658 | 0.336 | 0.759 | 1.01 | 0.99 |
 | | M2b | 0.1120 | 0.288 | 0.711 | 0.364 | 0.831 | 0.90 | 0.95 |
 | | M2c | 0.1065 | 0.323 | 0.738 | 0.377 | 0.848 | 0.94 | 0.95 |
-| | M3 | 0.1059 | 0.327 | 0.746 | 0.381 | 0.855 | 0.92 | 0.99 |
+| | M2d | **0.1059** | **0.327** | **0.749** | **0.383** | 0.851 | 0.94 | 0.95 |
+| | M3 | **0.1059** | **0.327** | 0.746 | 0.381 | **0.855** | 0.92 | 0.99 |
 
 M1r, a plain sort by past-year count, ranks better than the binned M1 because the bins discard within-bin ordering. It produces no probability, so it has no Brier score.
 
-**Table 6. Paired differences in Brier score, in-district rows (negative favours the first model).** 95% intervals from 500 building-level bootstrap resamples.
+**Table 6. Paired differences in Brier score (negative favours the first model).** In-district rows unless stated. 95% intervals from 500 building-level bootstrap resamples.
 
 | Contrast | Hypothesis | ΔBrier | 95% CI | Relative |
 |---|---|---|---|---|
@@ -208,6 +213,8 @@ M1r, a plain sort by past-year count, ranks better than the binned M1 because th
 | M2b − M2a | **H1** event history and type | −0.0126 | [−0.0134, −0.0118] | −9.8% |
 | M2c − M2b | **H2** complaints | −0.0063 | [−0.0068, −0.0058] | −5.4% |
 | M3 − M2c | **H3** boosting | −0.0001 | [−0.0004, +0.0001] | −0.1% |
+| M2d − M2c | **H4b** district context, in-district | −0.00004 | [−0.0002, +0.0001] | −0.04% |
+| M2d − M2c | **H4b** district context, *held-out districts* | −0.0007 | [−0.0011, −0.0003] | −0.6% |
 
 At the development origin, H1 and H2 are supported and H3 is not. Most of the gain over the count a renter could read off the record comes from *how* events are distributed in time and type. A further, smaller gain comes from complaints. Flexible trees add nothing that logistic regression on well-constructed features does not already capture. In practical terms, among the 10% of buildings ranked highest by M2c, 79.9% received a Class C violation within six months, against 71.5% when ranking by past-year count alone. The list also captured 36.9% rather than 33.0% of all buildings that went on to receive one.
 
@@ -223,7 +230,24 @@ Calibration *within* districts tells a different story (Figure 3; `out/tables/de
 
 The consequence for a renter depends on how the score is used. Under a single citywide threshold (the top 10% of scores), within-district recall ranges from 6% to 63% and tracks the district event rate (ρ = 0.79). In low-rate districts, nearly every building that later receives a Class C violation goes unflagged. Over-predicted probabilities and under-flagging are two views of the same problem: a citywide warning system is not equally informative everywhere, and it is least informative where hazards are rare *as recorded*. Whether those districts have fewer hazards or fewer reports of them is a question the records cannot answer on their own. We return to it in Section 8.
 
-![Figure 3. District observed/expected ratio (M2c) against district event rate, development origin. Marker size is proportional to scored buildings. Labelled districts have O/E below 0.6 or above 1.1.](../out/figures/dev_district_calibration.png)
+**Adding district context (M2d).** Telling the model where a building is removes most of the systematic pattern (Figure 3, right; Table 8). The correlation between district O/E and district event rate falls from 0.80 to 0.10. Mean absolute calibration error across districts falls from 0.117 to 0.090, and the number of districts miscalibrated by more than 20% falls from eight to two. The improvement is largest in the held-out districts the model never saw (mean |O/E − 1| from 0.183 to 0.114), which is also the only place where M2d's overall Brier gain is distinguishable from zero (Table 6). Staten Island remains the exception. Its two lowest-rate districts (502, 503) are still over-predicted about twofold (O/E 0.48 and 0.47), because a 2–3% event rate lies at the edge of what the district features span.
+
+**Table 8. District-level reliability with and without place information (59 community districts, development origin).**
+
+| | M2c (no place) | M2d (district context) |
+|---|---|---|
+| Median O/E (IQR) | 0.93 (0.86–1.00) | 0.97 (0.91–1.04) |
+| Range of O/E | 0.33–1.13 | 0.47–1.17 |
+| Mean \|O/E − 1\| (held-out districts) | 0.117 (0.183) | 0.090 (0.114) |
+| Districts with \|O/E − 1\| > 0.2 | 8 | 2 |
+| Spearman ρ(O/E, district event rate) | 0.80 | 0.10 |
+| Within-district recall at citywide top-10% cut | 6%–63% | 0%–68% |
+| Districts with recall < 10% | 2 | 8 |
+| Spearman ρ(recall, district event rate) | 0.79 | 0.86 |
+
+**Calibration and even coverage pull apart.** Better calibration sharpened the other inequality. Because M2d now correctly assigns lower probabilities in low-rate districts, a single citywide threshold flags even fewer buildings there. The number of districts in which fewer than one in ten eventual hazards is flagged rises from two to eight, and in one district (101) none is. Read one way, this is correct: hazards really are rarer there *as recorded*, and the threshold is spent where they are most likely. Read another way, a renter in those districts receives almost no warnings at all, including for the buildings that do go on to receive a Class C violation. A calibrated citywide probability and an evenly informative warning are different design goals. The choice between them — one threshold, district-relative thresholds, or no threshold with the probability shown alongside the district's base rate — is a normative decision, not a modelling one. A record-based tool should make that decision explicit.
+
+![Figure 3. District observed/expected ratio against district event rate, development origin, without (M2c, left) and with (M2d, right) district context. Marker size is proportional to scored buildings. Labelled districts have O/E below 0.6 or above 1.1.](../out/figures/dev_district_calibration.png)
 
 [[TODO: companion community-district map of O/E (needs the DCP community-district boundary file).]]
 
@@ -258,7 +282,7 @@ A record-based warning can be issued for about three in five listings. For the r
 
 **What a record can and cannot tell a renter.** If event history beats counts (H1), a disclosure tool should present timing and recurrence, not totals. If it does not, the honest product is the record itself.
 
-**Where the tool is trustworthy.** District-level calibration shows where a single citywide score misleads. A model that is well calibrated on average but under-predicts in districts with low complaint propensity will tell tenants there that their buildings are safer than they are. This is a knowledge-and-justice problem expressed through a geographic method. The burden of under-recording falls on the renters least served by the complaint system.
+**Where the tool is trustworthy.** District-level calibration shows where a single citywide score misleads. A model that is well calibrated on average but under-predicts in districts with low complaint propensity will tell tenants there that their buildings are safer than they are. This is a knowledge-and-justice problem expressed through a geographic method. The burden of under-recording falls on the renters least served by the complaint system. Adding place information repairs calibration (M2d) but cannot repair recording. It also exposes a second choice, between calibrated probabilities and evenly distributed warnings, that a tool designer makes whether or not they acknowledge it.
 
 **Abstention as a design principle.** Buildings with no recent record are out of scope by construction. For a renter, "insufficient record" is different information from "low risk". We argue it should be shown as such.
 
@@ -288,6 +312,8 @@ A record-based warning can be issued for about three in five listings. For the r
 | `comp_trend` | As `trend`, on complaints |
 | `comp365_cat_*` | Last-year problem counts in the 8 largest complaint categories (selected on pre-2023-07 data) and "other" |
 | `half_jul` | 1 for July origins |
+| `cd_share_c365`, `cd_share_c90` | Share of the community district's in-scope buildings with any Class C in the last 365 / 90 days (M2d) |
+| `cd_mean_comp365` | District mean of log(1 + past-year complaints) over in-scope buildings (M2d) |
 
 ## Appendix B. Problem-type mapping
 

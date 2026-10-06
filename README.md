@@ -21,7 +21,7 @@ Status: **v0.1 working paper, development stage.** The pipeline runs end to end 
 * **Outcome:** ≥1 Class C violation inspected in the next 6 months.
 * **Information set:** records approved ≥30 days before the origin. Never today's case status, never today's building attributes.
 * **Scope:** buildings with any Class C or complaint in the prior 24 months. Everything else is "insufficient record", not "low risk".
-* **Models, compared and not chained:** M1 count baseline → M2a/b/c nested logistic (counts → + event history and type → + complaints) → M3 gradient boosting on M2c inputs.
+* **Models, compared and not chained:** M1 count baseline → M2a/b/c/d nested logistic (counts → + event history and type → + complaints → + district context) → M3 gradient boosting on M2c inputs.
 * **Validation:** train 2020–22, tune 2022-07, calibrate 2023-01, **test 2024–25 (sealed)**. 20% of community districts are withheld from all fitting.
 * **Metrics:** Brier score (primary), calibration, precision and recall at a 10% review budget, AUC, coverage. Building-clustered paired bootstrap.
 
@@ -63,7 +63,7 @@ out/      tables/ and figures/ (committed), predictions (ignored)
 
 These have to be settled and logged in `docs/decisions.md` **before** `make freeze`. After the freeze they can only be run as labelled sensitivity analyses.
 
-1. **District context feature (M2d)?** Dev results show citywide calibration is good, but within-district O/E runs from 0.33 to 1.13 and tracks the district event rate (ρ = 0.80). Adding a district-level feature known at *t* (for example, the share of the district's buildings with a Class C in the past year) would likely fix much of this. The cost is that it makes the "no place information" model a weaker test of spatial transfer. Recommendation: add M2d as a *fifth* compared model rather than replacing M2c.
+1. ~~District context feature (M2d)~~ **Done (6 Oct).** It fixes systematic district miscalibration (ρ 0.80 → 0.10) but concentrates citywide warnings further. **New open decision:** which warning rule the paper recommends — a citywide threshold, district-relative thresholds, or probabilities shown alongside the district base rate. Decide before the freeze if it changes any primary metric.
 2. **Confirm the 2019 Class C break.** Pests rose from ~0.7k to 46.7k, and doors/egress from 3.9k to 19.2k. Find the legal or administrative source and cite it. Decide whether the stable-category outcome is a sensitivity analysis (current plan) or the primary outcome.
 3. **Sensitivity grid:** information lag 0/60 days; dismissed violations excluded; Class A/B counts as features; 3- and 12-month horizons.
 4. **RentCast match audit:** hand-check about 100 listings, especially the 513 nearest-point (≤30 m) matches and Manhattan non-matches.

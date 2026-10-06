@@ -17,7 +17,7 @@ The outcome is a *recorded* violation. It is not the true condition of a unit. R
 | RQ1. Does event history beat counts? | **H1.** Adding recency, repetition and problem type improves prediction over counts. | Brier(M2b) < Brier(M2a) on the same rows; building-clustered paired bootstrap. |
 | RQ2. Do complaints add information? | **H2.** Conditional on violations, complaint history still improves prediction. | Brier(M2c) < Brier(M2b). |
 | RQ3. Is a complex model worth it? | **H3.** Gradient boosting beats logistic regression on identical inputs. | Brier(M3) < Brier(M2c), out-of-time *and* out-of-district. Secondary hypothesis; may fail. |
-| RQ4. Is reliability spatially uneven? | **H4.** Performance falls in held-out districts, and calibration error is larger where records are sparser. | Held-out vs in-district metrics at the same origin; per-district observed/expected ratio against record density. |
+| RQ4. Is reliability spatially uneven? | **H4.** Performance falls in held-out districts, and calibration error is larger where records are sparser. **H4b.** District context known at *t* reduces district-level miscalibration. | Held-out vs in-district metrics at the same origin; per-district observed/expected ratio against record density; M2c vs M2d. |
 | RQ5 (application). What can a listing platform add? | Descriptive. | Share of RentCast listings that match an HPD building and fall inside model scope, by borough and rent quintile. |
 
 H1 and H2 are primary. H3 and H4 are secondary. RQ5 is the bridge to the product and is descriptive only.
@@ -70,6 +70,9 @@ $$\text{trend} = \frac{C^{90}}{90} - \frac{C^{365} - C^{90}}{275}$$
 Example: 9 events in the last 90 days and 9 in the 275 days before. The last 90 days are about 3× the earlier daily rate, and trend ≈ +0.067/day.
 
 The L2 penalty is tuned on the tune origin. Coefficients describe conditional associations, not causal effects.
+
+### M2d: district context (added 6 Oct 2026, before the freeze)
+M2c plus three features describing the building's community district at *t*: the share of in-scope buildings with any Class C in the last 365 and 90 days, and the mean log past-year complaints. They are computed from features, never outcomes. Held-out districts get their own values. M2d is motivated by the dev-stage finding that a place-blind model's district O/E tracks the district event rate (ρ = 0.80). Contrast: M2d − M2c, in-district and in held-out districts (H4b).
 
 ### M3: gradient boosting
 $$F_M(X) = F_0 + \nu \sum_{m=1}^{M} f_m(X), \qquad \hat p^{(3)} = \sigma(F_M(X))$$
