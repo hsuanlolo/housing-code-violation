@@ -4,7 +4,7 @@
 
 A renter can look up a building's HPD violation history. This project asks whether that history *forecasts* anything. Do the timing, type and repetition of public records predict a new **immediately hazardous (Class C)** violation in the next six months better than a simple count? And **where in the city** is such a forecast reliable?
 
-Status: **v0.1 working paper, development stage.** The pipeline runs end to end on public data. The 2024–2025 test set is sealed until the model spec is frozen.
+Status: **v0.3 working paper. Spec frozen 6 Oct 2026 (commit `8db7aa6`), 2024–2025 test scored once.** H1 (event history) and H2 (complaints) are supported; H3 (boosting) is supported but small (−0.7%); H4b (district context) did not replicate. Rankings transfer over time, but calibration decays as recorded violations per building inflate. Under a fixed 10% budget, the district-relative warning rule lifts every district to ≥19% recall at a 15% citywide recall cost.
 
 | | |
 |---|---|
@@ -59,12 +59,13 @@ paper/    manuscript.md, AAG abstract, build outputs (ignored)
 out/      tables/ and figures/ (committed), predictions (ignored)
 ```
 
-## Before the freeze: open decisions
+## After the freeze: next steps
 
-These have to be settled and logged in `docs/decisions.md` **before** `make freeze`. After the freeze they can only be run as labelled sensitivity analyses.
+Anything below is a **post-freeze, labelled sensitivity analysis**. None of it may change the primary results.
 
-1. ~~District context feature (M2d)~~ **Done (6 Oct).** It fixes systematic district miscalibration (ρ 0.80 → 0.10) but concentrates citywide warnings further. **New open decision:** which warning rule the paper recommends — a citywide threshold, district-relative thresholds, or probabilities shown alongside the district base rate. Decide before the freeze if it changes any primary metric.
-2. **Confirm the 2019 Class C break.** Pests rose from ~0.7k to 46.7k, and doors/egress from 3.9k to 19.2k. Find the legal or administrative source and cite it. Decide whether the stable-category outcome is a sensitivity analysis (current plan) or the primary outcome.
-3. **Sensitivity grid:** information lag 0/60 days; dismissed violations excluded; Class A/B counts as features; 3- and 12-month horizons.
-4. **RentCast match audit:** hand-check about 100 listings, especially the 513 nearest-point (≤30 m) matches and Manhattan non-matches.
-5. **Figure 3 map:** community-district choropleth of O/E (DCP boundary file).
+1. **Sensitivity grid:** stable-category outcome (the 2019 Class C break), information lag 0/60 days, dismissed violations excluded, Class A/B counts as features, 3- and 12-month horizons.
+2. **Recalibration schedule:** re-fit the calibration on the most recent closed window (e.g. 2026-01) and test how quickly calibration decays (Section 7.3).
+3. **Non-enforcement place context:** tract or district housing age and tenure (ACS/PLUTO) instead of record-derived district features.
+4. **Confirm the 2019 Class C reclassification** source and cite it.
+5. **RentCast:** hand-audit about 100 matches, then attach recalibrated M2d scores and district-relative flags to listings.
+6. **Figure:** community-district choropleth of O/E and of recall under both rules.
