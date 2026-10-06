@@ -1,0 +1,47 @@
+{
+  "registered_utc": "2026-10-06T16:49:49+00:00",
+  "code_sha256": "f932c4b056225025bfb364db424f63a6da19a4e46207fdd4bbb6c70ff2075adb",
+  "code_files": [
+    "common.py",
+    "03_build_panel.py",
+    "04_models.py",
+    "05_evaluate.py",
+    "10_acs_context.py",
+    "11_recalibration.py",
+    "12_partial_recal.py",
+    "14_rank_features.py",
+    "15_prereg.py"
+  ],
+  "params": {
+    "M2a": 1.0,
+    "M2b": 0.1,
+    "M2c": 0.01,
+    "M2d": 0.01,
+    "M2e": 0.01,
+    "M2d_rk": 1.0,
+    "held_out_cds": [
+      101,
+      110,
+      205,
+      210,
+      301,
+      302,
+      304,
+      315,
+      409,
+      410,
+      414,
+      503
+    ]
+  },
+  "lambda": 100.0,
+  "bootstrap_B": 1000,
+  "seed": 20261006,
+  "origins": {
+    "2027-01-01": "A-primary",
+    "2027-07-01": "A-replication",
+    "2026-01-01": "B-sealed-backtest",
+    "2026-07-01": "B-sealed-backtest"
+  },
+  "doc_sha256": "68c9d7a85404f51d9360ff4bc9cbdd22f8f74c432d36d6573a8eccc4ef33360e"
+}
