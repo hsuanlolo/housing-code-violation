@@ -59,13 +59,16 @@ paper/    manuscript.md, AAG abstract, build outputs (ignored)
 out/      tables/ and figures/ (committed), predictions (ignored)
 ```
 
-## After the freeze: next steps
+## After the freeze: secondary analyses
 
-Anything below is a **post-freeze, labelled sensitivity analysis**. None of it may change the primary results.
+Done (6 Oct 2026, labelled post-freeze; paper §7.7):
+* **ACS tract context (M2e):** −0.9% Brier vs M2c (in- and out-of-district); districts > 20% miscalibrated fell from 20 to 9. Temporal drift unchanged.
+* **Rolling recalibration:** half-yearly refresh lifts end-of-test O/E from 0.87 to 0.92. Per-district offsets from recent outcomes cut district error by about a third. Best: M2e + rolling district offsets.
 
-1. **Sensitivity grid:** stable-category outcome (the 2019 Class C break), information lag 0/60 days, dismissed violations excluded, Class A/B counts as features, 3- and 12-month horizons.
-2. **Recalibration schedule:** re-fit the calibration on the most recent closed window (e.g. 2026-01) and test how quickly calibration decays (Section 7.3).
-3. **Non-enforcement place context:** tract or district housing age and tenure (ACS/PLUTO) instead of record-derived district features.
-4. **Confirm the 2019 Class C reclassification** source and cite it.
-5. **RentCast:** hand-audit about 100 matches, then attach recalibrated M2d scores and district-relative flags to listings.
-6. **Figure:** community-district choropleth of O/E and of recall under both rules.
+Next, still labelled as sensitivity analyses:
+1. **Sensitivity grid:** stable-category outcome (2019 Class C break), information lag 0/60 days, dismissed violations excluded, Class A/B counts as features, 3- and 12-month horizons.
+2. **Shorter recalibration lag:** recalibrate on partial (e.g. 3-month) outcome windows to close the one-year lag.
+3. **Confirm the 2019 Class C reclassification** source and cite it.
+4. **RentCast:** hand-audit about 100 matches, then attach M2e + rolling-district-recalibrated scores and district-relative flags to listings.
+5. **Figure:** community-district choropleth of O/E and of recall under both rules.
+6. **Fresh out-of-time test** of M2e + rolling recalibration on 2026-01 when its window closes (after 2026-07 plus lag).

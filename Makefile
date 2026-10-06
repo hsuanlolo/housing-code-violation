@@ -23,7 +23,12 @@ test:
 	$(PY) code/04_models.py test
 	$(PY) code/05_evaluate.py test
 
+secondary:
+	$(PY) code/09_fetch_acs.py
+	$(PY) code/10_acs_context.py
+	$(PY) code/11_recalibration.py
+
 paper:
 	bash code/20_build_paper.sh
 
-.PHONY: data panel dev link freeze test paper
+.PHONY: data panel dev link freeze test secondary paper
