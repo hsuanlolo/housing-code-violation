@@ -41,8 +41,15 @@ ROLE_OF = {o: r for r, os in ORIGINS.items() for o in os}
 SPATIAL_HOLDOUT_SHARE = 0.20
 SEED = 20261006
 
-# Precision/recall are reported at a fixed review budget.
+# Precision/recall are reported at a fixed review budget, applied per origin.
 TOP_K_SHARE = 0.10
+
+# Primary warning rule (decided 2026-10-06, before the freeze): flag the top
+# TOP_K_SHARE of buildings *within each community district* at each origin.
+# The citywide rule (top share across the city) is reported alongside it.
+WARNING_RULE = "district_relative"
+# Model used for the warning-rule comparison and the listing application.
+PRODUCT_MODEL = "M2d"
 
 # Test-set seal. 04_models.py refuses to score "test" origins unless this file
 # exists; 08_freeze.py writes it with a hash of the frozen model spec.

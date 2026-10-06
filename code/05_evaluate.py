@@ -22,7 +22,7 @@ import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 
-from common import FIGURES, OUT, SEED, TABLES, TOP_K_SHARE
+from common import FIGURES, OUT, PRODUCT_MODEL, SEED, TABLES, TOP_K_SHARE, WARNING_RULE
 
 PROB_MODELS = ["M1", "M2a", "M2b", "M2c", "M2d", "M3"]
 B = 500
@@ -43,6 +43,26 @@ def top_k_mask(score, share=TOP_K_SHARE):
     return m
 
 
+def flag(df, col, rule):
+    """Warning flags under a review budget of TOP_K_SHARE, applied per origin.
+
+    citywide           top share of all buildings at the origin
+    district_relative  top share within each community district at the origin;
+                       buildings without a district use the citywide cut
+    """
+    out = np.zeros(len(df), bool)
+    pos = pd.Series(np.arange(len(df)), index=df.index)
+    for _, g in df.groupby("origin"):
+        if rule == "citywide":
+            out[pos[g.index].values] = top_k_mask(g[col].values)
+            continue
+        city = top_k_mask(g[col].values)
+        out[pos[g.index].values] = city            # fallback for missing district
+        for _, h in g.dropna(subset=["cd"]).groupby("cd"):
+            out[pos[h.index].values] = top_k_mask(h[col].values)
+    return out
+
+
 def calib_slope(p, y):
     if y.min() == y.max():
         return np.nan, np.nan
@@ -58,7 +78,7 @@ def ece(p, y, bins=10):
 
 def metrics(df, col, base_rate, prob=True):
     y, s = df["y"].values, df[col].values
-    m = top_k_mask(s)
+    m = flag(df, col, "citywide")
     out = {"n": len(y), "events": int(y.sum()), "event_rate": y.mean(),
            "precision_at_10": y[m].mean(), "recall_at_10": y[m].sum() / max(1, y.sum()),
            "auc": roc_auc_score(y, s) if 0 < y.sum() < len(y) else np.nan}
@@ -124,6 +144,20 @@ def district_plot(bys, path):
     fig.tight_layout(); fig.savefig(path, dpi=200); plt.close(fig)
 
 
+def recall_plot(tabs, path):
+    """Within-district recall vs district event rate under each warning rule."""
+    fig, ax = plt.subplots(figsize=(5.5, 4))
+    for (rule, by), mk in zip(tabs.items(), ("o", "s")):
+        ax.scatter(by["event_rate"], by["recall_citywide_cut"], s=by["n"] / 60, marker=mk,
+                   alpha=0.7, label=rule.replace("_", "-"), edgecolor="white", linewidth=0.5)
+    ax.axhline(0.10, color="#999", lw=1, ls="--")
+    ax.set_xlabel("District event rate")
+    ax.set_ylabel("Share of district's eventual hazards flagged ({})".format(PRODUCT_MODEL))
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.legend(frameon=False, fontsize=8)
+    fig.tight_layout(); fig.savefig(path, dpi=200); plt.close(fig)
+
+
 def main(stage):
     df = pd.read_parquet(OUT/"predictions_{}.parquet".format(stage))
     meta = json.loads((OUT/"model_meta_{}.json".format(stage)).read_text())
@@ -177,20 +211,42 @@ def main(stage):
                   by[["o_e_ratio", "event_rate"]].corr("spearman").iloc[0, 1]))
         bys[model] = by
     district_plot(bys, FIGURES/"{}_district_calibration.png".format(stage))
+
+    # 4. Warning rules (primary: WARNING_RULE). Same budget, two allocations.
+    rows, recall_tabs = [], {}
+    for model in ("M2c", "M2d", "M3"):
+        for rule in ("citywide", "district_relative"):
+            f = flag(df, model, rule)
+            by = by_district(df, model, rule)
+            r = by["recall_citywide_cut"]
+            rows.append(dict(model=model, rule=rule, primary=(model == PRODUCT_MODEL and rule == WARNING_RULE),
+                             share_flagged=f.mean(), precision=df["y"].values[f].mean(),
+                             recall=df["y"].values[f].sum() / df["y"].sum(),
+                             recall_min=r.min(), recall_median=r.median(), recall_max=r.max(),
+                             districts_recall_lt10=int((r < 0.10).sum()),
+                             recall_iqr=r.quantile(.75) - r.quantile(.25),
+                             rho_recall_event_rate=by[["recall_citywide_cut", "event_rate"]].corr("spearman").iloc[0, 1],
+                             precision_min=(by["events_flagged"] / by["n_flagged"].clip(lower=1)).min()))
+            if model == PRODUCT_MODEL:
+                recall_tabs[rule] = by
+    wr = pd.DataFrame(rows)
+    wr.to_csv(TABLES/"{}_warning_rules.csv".format(stage), index=False)
+    print(wr.round(3).to_string(index=False))
+    recall_plot(recall_tabs, FIGURES/"{}_warning_rules.png".format(stage))
     ind = df[df["spatial_holdout"] == 0]
     reliability_plot(ind, ["M1", "M2b", "M2c", "M2d", "M3"], FIGURES/"{}_reliability.png".format(stage),
                      "Reliability, {} origin(s), in-district".format(stage))
 
 
-def by_district(df, model):
-    cut = np.sort(df[model].values)[::-1][max(1, int(len(df) * TOP_K_SHARE)) - 1]
-    d = df.dropna(subset=["cd"]).assign(flag=lambda x: x[model] >= cut)
+def by_district(df, model, rule="citywide"):
+    d = df.assign(flag=flag(df, model, rule)).dropna(subset=["cd"])
     by = d.groupby("cd").apply(lambda g: pd.Series({
         "n": len(g), "events": g["y"].sum(), "event_rate": g["y"].mean(),
         "mean_pred": g[model].mean(), "o_e_ratio": g["y"].mean() / g[model].mean(),
         "brier": np.mean((g[model] - g["y"]) ** 2),
         "recall_citywide_cut": g.loc[g["flag"], "y"].sum() / max(1, g["y"].sum()),
         "share_flagged": g["flag"].mean(),
+        "n_flagged": g["flag"].sum(), "events_flagged": g.loc[g["flag"], "y"].sum(),
         "c365_mean": g["c365"].mean(),
         "held_out": int(g["spatial_holdout"].iat[0])}))
     return by.reset_index()

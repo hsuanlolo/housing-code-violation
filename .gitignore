@@ -11,3 +11,4 @@ paper/*.pdf
 paper/manuscript.html
 __pycache__/
 .DS_Store
+.Rhistory

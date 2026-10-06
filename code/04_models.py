@@ -31,7 +31,9 @@ from sklearn.metrics import brier_score_loss
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import FunctionTransformer, StandardScaler
 
-from common import (FINAL, FREEZE_FILE, OUT, SEED, SPATIAL_HOLDOUT_SHARE, origins)
+from common import (FINAL, FREEZE_FILE, HORIZON_MONTHS, INFO_LAG_DAYS, LOOKBACK_MONTHS, ORIGINS,
+                    OUT, PRODUCT_MODEL, SEED, SPATIAL_HOLDOUT_SHARE, TOP_K_SHARE, WARNING_RULE,
+                    origins)
 
 KAPPA = 20  # M1 smoothing strength (pseudo-observations at the overall rate)
 
@@ -54,7 +56,11 @@ def feature_sets(cols):
 
 
 def spec_hash(fs):
-    spec = {"kappa": KAPPA, "features": fs, "lr_C": LR_GRID, "gb_grid": GB_GRID}
+    spec = {"kappa": KAPPA, "features": fs, "lr_C": LR_GRID, "gb_grid": GB_GRID,
+            "design": {"horizon": HORIZON_MONTHS, "lag": INFO_LAG_DAYS, "lookback": LOOKBACK_MONTHS,
+                       "origins": ORIGINS, "holdout": SPATIAL_HOLDOUT_SHARE, "seed": SEED,
+                       "top_k": TOP_K_SHARE, "warning_rule": WARNING_RULE,
+                       "product_model": PRODUCT_MODEL}}
     return hashlib.sha256(json.dumps(spec, sort_keys=True).encode()).hexdigest()[:16]
 
 
