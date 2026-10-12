@@ -4,7 +4,7 @@
 
 A renter can look up a building's HPD violation history. This project asks whether that history *forecasts* anything. Do the timing, type and repetition of public records predict a new **immediately hazardous (Class C)** violation in the next six months better than a simple count? And **where in the city** is such a forecast reliable?
 
-Status: **v0.3 working paper. Spec frozen 6 Oct 2026 (commit `8db7aa6`), 2024–2025 test scored once.** H1 (event history) and H2 (complaints) are supported; H3 (boosting) is supported but small (−0.7%); H4b (district context) did not replicate. Rankings transfer over time, but calibration decays as recorded violations per building inflate. Under a fixed 10% budget, the district-relative warning rule lifts every district to ≥19% recall at a 15% citywide recall cost.
+Status: **v0.3 working paper. Spec frozen 6 Oct 2026 (commit `83b83e1`), 2024–2025 test scored once.** H1 (event history) and H2 (complaints) are supported; H3 (boosting) is supported but small (−0.7%); H4b (district context) did not replicate. Rankings transfer over time, but calibration decays as recorded violations per building inflate. Under a fixed 10% budget, the district-relative warning rule lifts every district to ≥19% recall at a 15% citywide recall cost.
 
 | | |
 |---|---|

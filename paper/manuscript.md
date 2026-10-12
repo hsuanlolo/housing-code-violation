@@ -2,7 +2,7 @@
 
 **Author.** Hsuan Lo, DDes (Harvard University). Independent Researcher. Correspondence: hsuanlo@alumni.harvard.edu
 
-**Status.** Working paper v0.3, 6 October 2026. The model specification was frozen at 05:37 UTC on 6 October 2026 (`docs/FROZEN_SPEC.json`, git commit `8db7aa6`), and the 2024–2025 test origins were then scored once. Section 7 reports those test results. Development-stage results (1 January 2023 origin) that informed the specification are in Appendix D. Analyses labelled *secondary* were not pre-specified. Sections 7.7 (ACS context; rolling, partial-window and anchored recalibration), 7.8 (sensitivity grid) and 7.9 (rank-normalized inputs) were added after the test was scored. Section 7.10 summarizes a second pre-registration (`docs/preregistration.md`) for a prospective test in 2026–2027.
+**Status.** Working paper v0.3, 6 October 2026. The model specification was frozen at 05:37 UTC on 6 October 2026 (`docs/FROZEN_SPEC.json`, git commit `83b83e1`), and the 2024–2025 test origins were then scored once. Section 7 reports those test results. Development-stage results (1 January 2023 origin) that informed the specification are in Appendix D. Analyses labelled *secondary* were not pre-specified. Sections 7.7 (ACS context; rolling, partial-window and anchored recalibration), 7.8 (sensitivity grid) and 7.9 (rank-normalized inputs) were added after the test was scored. Section 7.10 summarizes a second pre-registration (`docs/preregistration.md`) for a prospective test in 2026–2027.
 
 ---
 
